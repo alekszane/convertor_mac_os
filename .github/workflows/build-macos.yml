@@ -28,7 +28,7 @@ jobs:
         pyinstaller --windowed \
           --name "TimeConverter" \
           --osx-bundle-identifier "com.tool.timeconverter" \
-          converter_macos.py
+          converter_macos_github.py
           
     - name: Create DMG
       run: |
