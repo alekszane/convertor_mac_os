@@ -1,29 +1,64 @@
-name: Build Simple macOS App
+name: Build macOS Application
 
-on: [workflow_dispatch]  # Ручной запуск
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
 
 jobs:
-  build:
+  build-macos:
     runs-on: macos-latest
     
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Python
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.9'
         
-    - name: Install packages
+    - name: Install dependencies
       run: |
-        pip install pyinstaller
+        python -m pip install --upgrade pip
+        pip install pandas openpyxl pyinstaller
         
-    - name: Build with PyInstaller
+    - name: Build application
       run: |
-        pyinstaller --onefile --console --name TimeConverter converter_macos_light.py
-        
-    - name: Upload binary
+        pyinstaller --windowed \
+          --name "TimeConverter" \
+          --osx-bundle-identifier "com.tool.timeconverter" \
+          converter_macos.py
+          
+    - name: Create DMG
+      run: |
+        # Устанавливаем create-dmg для создания дистрибутива
+        brew install create-dmg
+        mkdir -p dist_dmg
+        create-dmg \
+          --volname "TimeConverter" \
+          --window-pos 200 120 \
+          --window-size 600 400 \
+          --icon-size 100 \
+          --icon "TimeConverter.app" 150 190 \
+          --hide-extension "TimeConverter.app" \
+          --app-drop-link 450 190 \
+          "dist_dmg/TimeConverter.dmg" \
+          "dist/TimeConverter.app"
+          
+    - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: macOS-Application
-        path: dist/TimeConverter
+        name: TimeConverter-macOS
+        path: |
+          dist/TimeConverter.app
+          dist_dmg/TimeConverter.dmg
+        retention-days: 30
+        
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          dist/TimeConverter.app/**/*
+          dist_dmg/TimeConverter.dmg
