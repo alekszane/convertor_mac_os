@@ -1,0 +1,17 @@
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build_for_macos:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build for macOS
+        run: gcc -fno-common -dynamiclib src/stats.c -o dist/sqlite3-stats.dylib
